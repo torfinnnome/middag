@@ -4,7 +4,7 @@ Tired of the eternal question, "Hva skal vi ha til middag?" (What's for dinner?)
 
 Fear not, for **Middag** is here! It's a surprisingly functional (most of the time) Next.js application designed to take the *thinking* (and maybe some of the arguing) out of your weekly dinner planning.
 
-![Middag Screenshot](sh0t.png>)
+![Middag Screenshot](sh0t.png)
 *(Yes, it actually looks like this!)*
 
 ## What Does It Actually Do?
