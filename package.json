@@ -47,5 +47,8 @@
     "preview": "opennextjs-cloudflare build && wrangler dev",
     "start": "next start",
     "types": "wrangler types --env-interface CloudflareEnv env.d.ts"
+  },
+  "resolutions": {
+    "glob": "^10.4.2"
   }
 }
