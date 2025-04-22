@@ -1,6 +1,8 @@
 import * as XLSX from 'xlsx';
 import MealPlanner from '@/components/MealPlanner'; // Importer klientkomponenten
 
+export const runtime = 'edge'; // Add this line for Cloudflare Pages compatibility
+
 // Fetch and parse xlsx url
 async function getMealData() {
     try {
