@@ -323,7 +323,7 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
     const [lockedItemIds, setLockedItemIds] = useState<Set<string>>(new Set());
     const [showCopyTable, setShowCopyTable] = useState(false);
     const [language, setLanguage] = useState<LanguageKey>('no');
-    const [scoringMethod, setScoringMethod] = useState<ScoringMethod>('weighted');
+    const [scoringMethod, setScoringMethod] = useState<ScoringMethod>('random'); // Default to random
     const copyTableRef = useRef<HTMLDivElement>(null);
 
     // Translation helper
