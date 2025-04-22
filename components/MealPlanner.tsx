@@ -183,13 +183,21 @@ function SortableMealItem({ item, isLocked, onLockToggle, onMealUpdate, language
     };
 
     const handleSave = () => {
-        const trimmedMeal = editedMeal.trim();
-        if (trimmedMeal !== item.meal && trimmedMeal !== '') {
-            onMealUpdate(item.id, trimmedMeal); // Call parent handler to update state
-        } else if (trimmedMeal === '') {
-            setEditedMeal(item.meal); // Revert if input is empty
+        const newMeal = editedMeal; // Keep the raw input value
+
+        // Prevent saving if the input consists only of whitespace or is empty
+        if (newMeal.trim() === '') {
+            setEditedMeal(item.meal); // Revert to the original meal name
+            setIsEditing(false);
+            return; // Exit early
         }
-        // If unchanged, no update needed, just exit edit mode
+
+        // If the meal has changed (compared to the original), update it
+        if (newMeal !== item.meal) {
+            onMealUpdate(item.id, newMeal); // Save the potentially untrimmed value
+        }
+
+        // Always exit editing mode
         setIsEditing(false);
     };
 
