@@ -202,6 +202,12 @@ function SortableMealItem({ item, isLocked, onLockToggle, onMealUpdate, language
     };
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        // Prevent dnd-kit's KeyboardSensor from interfering with spacebar in the input
+        if (event.key === ' ') {
+            event.stopPropagation();
+            return; // Allow default spacebar behavior
+        }
+
         if (event.key === 'Enter') {
             handleSave();
         } else if (event.key === 'Escape') {
