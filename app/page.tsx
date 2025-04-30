@@ -8,7 +8,7 @@ async function getMealData() {
     try {
 
         const middagsUrl = process.env.MIDDAGSURL;
-        console.log("process.env:", process.env);
+        // Removed logging of process.env to avoid exposing sensitive information.
         console.log("MIDDAGSURL:", process.env.MIDDAGSURL);
 
         if (!middagsUrl) {
