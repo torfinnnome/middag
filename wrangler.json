@@ -9,7 +9,7 @@
   "kv_namespaces": [
     {
       "binding": "RECIPES_KV",
-      "id": "dummy-id-for-local-development"
+      "id": "${CLOUDFLARE_KV_RECIPES_ID}"
     }
   ]
 }
