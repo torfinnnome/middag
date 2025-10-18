@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from 'next/server';
 
 // The CloudflareEnv interface is globally available after running `npm run types`.
