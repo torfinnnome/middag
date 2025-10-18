@@ -1,8 +1,7 @@
 import MealPlanner from '@/components/MealPlanner';
 
-// Edge runtime is required for Cloudflare Pages deployment
-export const runtime = 'edge';
-
+// Note: @opennextjs/cloudflare does NOT support edge runtime
+// It uses Node.js runtime which works fine on Cloudflare Workers
 // Pass the data URL as an environment variable to the client component
 export default function HomePage() {
     const middagsUrl = process.env.MIDDAGSURL || '';

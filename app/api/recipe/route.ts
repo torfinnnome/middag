@@ -1,9 +1,8 @@
-export const runtime = 'edge';
-
 import { NextResponse } from 'next/server';
 
 // The CloudflareEnv interface is globally available after running `npm run types`.
 // No need to re-declare it here.
+// Note: Edge runtime removed - OpenNext.js doesn't support edge runtime in API routes
 
 export async function POST(request: Request) {
   try {
