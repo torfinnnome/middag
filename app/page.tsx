@@ -1,6 +1,8 @@
 import * as XLSX from 'xlsx';
 import MealPlanner from '@/components/MealPlanner'; // Importer klientkomponenten
 
+export const runtime = 'edge';
+
 // The 'edge' runtime was removed to resolve a build error with the OpenNext tool.
 
 // Fetch and parse xlsx url
