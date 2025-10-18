@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
     DndContext,
     closestCenter,
@@ -32,6 +33,14 @@ interface WeeklyPlanItem {
 interface MealPlannerProps {
     allCategories: string[];
     mealsData: { [key: string]: string[] };
+}
+
+interface SavedPlanState {
+  weeklyPlan: WeeklyPlanItem[];
+  lockedItemIds: string[];
+  selectedCategories: string[];
+  language: LanguageKey;
+  scoringMethod: ScoringMethod;
 }
 
 // Interface for SortableMealItem props, including the new meal update handler
@@ -78,6 +87,9 @@ const translations = {
         scoringWeighted: "Weighted (Top Preferred)",
         languageLabel: "Language",
         editMealHint: "Double-click to edit", // Added hint text
+        sharePlan: "Share Plan", // Added for share button
+        shareSuccess: "Shareable link copied to clipboard!",
+        shareError: "Failed to create shareable link.",
     },
     no: {
         selectCategories: "Velg kategorier:",
@@ -104,6 +116,9 @@ const translations = {
         scoringWeighted: "Vektet (topp foretrukket)",
         languageLabel: "Språk",
         editMealHint: "Dobbeltklikk for å redigere", // Added hint text
+        sharePlan: "Del Plan", // Added for share button
+        shareSuccess: "Delbar lenke er kopiert til utklippstavlen!",
+        shareError: "Kunne ikke lage delbar lenke.",
     },
     es: {
         selectCategories: "Seleccionar Categorías:",
@@ -130,11 +145,28 @@ const translations = {
         scoringWeighted: "Ponderado (Superior Preferido)",
         languageLabel: "Idioma",
         editMealHint: "Doble clic para editar", // Added hint text
+        sharePlan: "Compartir Plan", // Added for share button
+        shareSuccess: "¡Enlace para compartir copiado al portapapeles!",
+        shareError: "Error al crear el enlace para compartir.",
     }
 };
 
 const internalDaysOfWeek = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 type ScoringMethod = 'random' | 'weighted';
+
+// --- Debounce Hook ---
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+    return debouncedValue;
+}
 
 // --- Sortable Item Component (with Editing) ---
 function SortableMealItem({ item, isLocked, onLockToggle, onMealUpdate, language }: SortableMealItemProps & { language: LanguageKey }) {
@@ -323,7 +355,10 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
     const [lockedItemIds, setLockedItemIds] = useState<Set<string>>(new Set());
     const [showCopyTable, setShowCopyTable] = useState(false);
     const [language, setLanguage] = useState<LanguageKey>('no');
-    const [scoringMethod, setScoringMethod] = useState<ScoringMethod>('random'); // Default to random
+    const [scoringMethod, setScoringMethod] = useState<ScoringMethod>('random');
+    const [recipeId, setRecipeId] = useState<string | null>(null);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const searchParams = useSearchParams();
     const copyTableRef = useRef<HTMLDivElement>(null);
 
     // Translation helper
@@ -335,47 +370,17 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
             });
         }
         return text;
-    }, [language]); // Dependency is correct
+    }, [language]);
 
     // Dnd Sensors
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-          activationConstraint: { distance: 8 },
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
-
-    // Clipboard Copy Logic
-    const copyTableToClipboard = useCallback(async (plan: WeeklyPlanItem[]) => {
-        if (!navigator.clipboard) {
-            console.error("Clipboard API not available.");
-            alert(t('copyError'));
-            return;
-        }
-        const textToCopy = plan
-            .map(item => `${item.day}: ${item.meal}`)
-            .join('\n');
-        try {
-            await navigator.clipboard.writeText(textToCopy);
-            // Consider a less intrusive notification (toast) instead of alert
-            // alert(t('copySuccess'));
-        } catch (err) {
-            console.error('Failed to copy: ', err);
-            alert(t('copyError'));
-        }
-    }, [t]); // Depends on t for messages
-
-    useEffect(() => {
-        if (showCopyTable && weeklyPlan.length > 0) {
-            copyTableToClipboard(weeklyPlan);
-        }
-    }, [showCopyTable, weeklyPlan, copyTableToClipboard]);
-
 
     // Function to generate the plan
     const generatePlan = useCallback(() => {
+        // ... (rest of the function is identical, just ensure it uses the correct `t`)
          const availableCategories = selectedCategories.filter(cat => mealsData[cat]?.length > 0);
          const currentLockedItemsMap = new Map(
              weeklyPlan.filter(item => lockedItemIds.has(item.id)).map(item => [item.id, item])
@@ -383,13 +388,13 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
          const usedMealsThisWeek = new Set<string>(
              Array.from(currentLockedItemsMap.values())
                  .map(item => item.meal)
-                 .filter(meal => meal && meal !== t('noDishesAvailable') && meal !== t('noDishFound') && meal !== t('errorKeptLocked')) // Filter out system messages
+                 .filter(meal => meal && meal !== t('noDishesAvailable') && meal !== t('noDishFound') && meal !== t('errorKeptLocked'))
          );
 
          const newPlan: WeeklyPlanItem[] = [];
          const shuffledCategories = [...availableCategories].sort(() => Math.random() - 0.5);
          let categoryIndex = 0;
-         const currentDisplayDays = internalDaysOfWeek.map(dayKey => t(dayKey as keyof typeof translations.en)); // Translate day names
+         const currentDisplayDays = internalDaysOfWeek.map(dayKey => t(dayKey as keyof typeof translations.en));
 
          for (let i = 0; i < internalDaysOfWeek.length; i++) {
              const currentDayKey = internalDaysOfWeek[i];
@@ -401,14 +406,11 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
              if (isCurrentSlotLocked && existingItemAtIndex) {
                   const lockedItem = currentLockedItemsMap.get(existingItemAtIndex.id);
                   if(lockedItem){
-                     // Update day display name in case language changed, keep the meal
                      newPlan.push({ ...lockedItem, day: currentDayDisplay, dayKey: currentDayKey });
                   } else {
-                     // Should theoretically not happen if lockedItemIds and weeklyPlan are in sync
                      newPlan.push({ id: existingItemAtIndex.id, day: currentDayDisplay, dayKey: currentDayKey, meal: t('errorKeptLocked'), category: "-" });
                   }
              } else {
-                  // Generate new meal for non-locked slot
                   let mealMessage = "";
                   let categoryForDay = "-";
                   if (availableCategories.length === 0) {
@@ -429,14 +431,13 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
 
                       if (chosenMeal) {
                           mealMessage = chosenMeal;
-                          usedMealsThisWeek.add(chosenMeal); // Add newly generated meal to used set
+                          usedMealsThisWeek.add(chosenMeal);
                       } else {
-                          // No meal found even with fallbacks (maybe category empty or all used?)
                           mealMessage = t('noDishFound');
                       }
                   }
                    newPlan.push({
-                       id: uuidv4(), // Generate new ID for the unlocked item
+                       id: uuidv4(),
                        day: currentDayDisplay,
                        dayKey: currentDayKey,
                        meal: mealMessage,
@@ -445,22 +446,125 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
               }
          }
          setWeeklyPlan(newPlan);
-     }, [selectedCategories, mealsData, lockedItemIds, weeklyPlan, t, scoringMethod]); // Depends on these states/functions
+     }, [selectedCategories, mealsData, lockedItemIds, weeklyPlan, t, scoringMethod]);
 
-    // Effect for initial generation and reacting to language changes
+    // Effect for initial load from URL or new plan generation
     useEffect(() => {
-        generatePlan();
-        // No explicit disable comment needed if deps are correct
+        const idFromUrl = searchParams.get('recipeId');
+        if (idFromUrl) {
+            setRecipeId(idFromUrl);
+            const loadRecipe = async () => {
+                try {
+                    const response = await fetch(`/api/recipe?id=${idFromUrl}`);
+                    if (response.ok) {
+                        const data = await response.json() as SavedPlanState;
+                        setWeeklyPlan(data.weeklyPlan || []);
+                        setLockedItemIds(new Set(data.lockedItemIds || []));
+                        setSelectedCategories(data.selectedCategories || allCategories);
+                        setLanguage(data.language || 'no');
+                        setScoringMethod(data.scoringMethod || 'random');
+                    } else {
+                        console.error('Failed to load recipe, generating a new plan.');
+                        generatePlan();
+                    }
+                } catch (error) {
+                    console.error('Error loading recipe:', error);
+                    generatePlan();
+                }
+            };
+            loadRecipe();
+        } else {
+            generatePlan();
+        }
+        setIsInitialLoad(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [allCategories, mealsData, language, t]); // Rerun plan generation if language changes
+    }, [searchParams]); // Only run on initial load and when URL params change
 
+    // Debounce state for autosaving
+    const debouncedState = useDebounce({ weeklyPlan, lockedItemIds: Array.from(lockedItemIds), selectedCategories, language, scoringMethod }, 1000);
+
+    // Effect for autosaving changes to the backend
+    useEffect(() => {
+        if (isInitialLoad || !recipeId) {
+            return; // Don't save on initial load or if there's no recipe ID
+        }
+
+        const saveRecipe = async () => {
+            try {
+                await fetch(`/api/recipe?id=${recipeId}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(debouncedState),
+                });
+            } catch (error) {
+                console.error('Error saving recipe:', error);
+            }
+        };
+
+        saveRecipe();
+    }, [debouncedState, recipeId, isInitialLoad]);
+
+    // Handler for sharing/saving the plan
+    const handleShare = async () => {
+        const stateToSave = {
+            weeklyPlan,
+            lockedItemIds: Array.from(lockedItemIds),
+            selectedCategories,
+            language,
+            scoringMethod,
+        };
+
+        try {
+            const response = await fetch('/api/recipe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(stateToSave),
+            });
+
+            if (response.ok) {
+                const { id } = await response.json() as { id: string };
+                setRecipeId(id);
+                const newUrl = `${window.location.origin}${window.location.pathname}?recipeId=${id}`;
+                window.history.pushState({ path: newUrl }, '', newUrl);
+                navigator.clipboard.writeText(newUrl);
+                alert(t('shareSuccess'));
+            } else {
+                alert(t('shareError'));
+            }
+        } catch (error) {
+            console.error('Error sharing recipe:', error);
+            alert(t('shareError'));
+        }
+    };
+
+    // Clipboard Copy Logic
+    const copyTableToClipboard = useCallback(async (plan: WeeklyPlanItem[]) => {
+        if (!navigator.clipboard) {
+            console.error("Clipboard API not available.");
+            alert(t('copyError'));
+            return;
+        }
+        const textToCopy = plan.map(item => `${item.day}: ${item.meal}`).join('\n');
+        try {
+            await navigator.clipboard.writeText(textToCopy);
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+            alert(t('copyError'));
+        }
+    }, [t]);
+
+    useEffect(() => {
+        if (showCopyTable && weeklyPlan.length > 0) {
+            copyTableToClipboard(weeklyPlan);
+        }
+    }, [showCopyTable, weeklyPlan, copyTableToClipboard]);
 
     // Handler for Category Toggle
     const handleCategoryToggle = (category: string) => {
         setSelectedCategories(prev =>
             prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]
         );
-        // Note: Does not automatically regenerate plan on category change. User clicks button.
     };
 
     // Handler for Lock Toggle
@@ -476,16 +580,14 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
         });
     };
 
-    // Handler for Manual Meal Update from SortableMealItem
+    // Handler for Manual Meal Update
     const handleMealUpdate = useCallback((id: string, newMeal: string) => {
         setWeeklyPlan(currentPlan =>
             currentPlan.map(item =>
-                item.id === id
-                ? { ...item, meal: newMeal, category: 'Manual' } // Update meal and mark category as Manual
-                : item
+                item.id === id ? { ...item, meal: newMeal, category: 'Manual' } : item
             )
         );
-    }, []); // No dependencies, uses setter function
+    }, []);
 
     // Handler for Drag End
     const handleDragEnd = (event: DragEndEvent) => {
@@ -497,12 +599,11 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
               setWeeklyPlan((items) => {
                   const oldIndex = items.findIndex(item => item.id === activeId);
                   const newIndex = items.findIndex(item => item.id === overId);
-                  if (oldIndex === -1 || newIndex === -1) return items; // Should not happen
+                  if (oldIndex === -1 || newIndex === -1) return items;
 
                   const reorderedItems = arrayMove(items, oldIndex, newIndex);
                   const currentDisplayDays = internalDaysOfWeek.map(dayKey => t(dayKey as keyof typeof translations.en));
 
-                  // Update day names and keys based on new positions
                   return reorderedItems.map((item, index) => ({
                       ...item,
                       day: currentDisplayDays[index],
@@ -514,36 +615,32 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
 
     // --- JSX Rendering ---
     return (
-        // Added background and minimum height for better page structure
         <div className="relative p-4 md:p-6 bg-gray-50 min-h-screen">
-            {/* Language Selector - Updated Styling */}
+            {/* Language Selector */}
             <div className="absolute top-4 right-4 z-10">
                  <label htmlFor="language-select" className="sr-only">{t('languageLabel')}</label>
                  <select
                      id="language-select"
                      value={language}
                      onChange={(e) => setLanguage(e.target.value as LanguageKey)}
-                     // Cleaner styling: white background, gray text, subtle border/shadow
                      className="text-sm bg-white border border-gray-300 rounded px-3 py-1.5 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-700 hover:border-gray-400 transition duration-150 ease-in-out"
                      aria-label={t('languageLabel')}
                  >
                      {(Object.keys(languages) as LanguageKey[]).map(langKey => (
                          <option key={langKey} value={langKey}>
-                             {languages[langKey]} {/* Show EN, NO, ES */}
+                             {languages[langKey]}
                          </option>
                      ))}
                  </select>
              </div>
 
-
-            {/* Main Content Area - Increased top margin */}
+            {/* Main Content Area */}
             <div className="flex flex-col md:flex-row gap-8 mt-16">
-                {/* Left column: Controls - Increased spacing */}
+                {/* Left column: Controls */}
                 <div className="w-full md:w-1/4 space-y-6">
                     {/* Category Selection */}
                     <div>
                          <h2 className="text-lg font-semibold mb-2 text-gray-700">{t('selectCategories')}</h2>
-                         {/* Added white background and padding for visual grouping */}
                          <div className="space-y-1 bg-white p-3 rounded shadow-sm border border-gray-200">
                              {allCategories.map(category => (
                                  <div key={category} className="flex items-center">
@@ -560,7 +657,7 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
                          </div>
                     </div>
 
-                    {/* Scoring Method Selector - Updated Styling */}
+                    {/* Scoring Method Selector */}
                      <div>
                          <label htmlFor="scoring-method-select" className="block text-sm font-medium text-gray-700 mb-1">
                              {t('scoringMethodLabel')}
@@ -569,7 +666,6 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
                              id="scoring-method-select"
                              value={scoringMethod}
                              onChange={(e) => setScoringMethod(e.target.value as ScoringMethod)}
-                             // Same clean styling as language selector
                              className="w-full text-sm bg-white border border-gray-300 rounded px-3 py-1.5 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-700 hover:border-gray-400 transition duration-150 ease-in-out"
                          >
                              <option value="random">{t('scoringRandom')}</option>
@@ -577,8 +673,7 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
                          </select>
                      </div>
 
-
-                    {/* Action Buttons - Updated Colors and Focus Rings */}
+                    {/* Action Buttons */}
                     <div className="space-y-2">
                          <button
                              onClick={generatePlan}
@@ -591,6 +686,12 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
                              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out shadow focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
                          >
                              {showCopyTable ? t('hideCopyTable') : t('showCopyTable')}
+                         </button>
+                         <button
+                             onClick={handleShare}
+                             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out shadow focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
+                         >
+                             {t('sharePlan')}
                          </button>
                     </div>
                 </div>
@@ -607,8 +708,8 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
                                         item={item}
                                         isLocked={lockedItemIds.has(item.id)}
                                         onLockToggle={handleLockToggle}
-                                        onMealUpdate={handleMealUpdate} // Pass the update handler
-                                        language={language} // Pass language for internal translations
+                                        onMealUpdate={handleMealUpdate}
+                                        language={language}
                                     />
                                 ))}
                             </ul>
@@ -617,15 +718,13 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
                 </div>
             </div>
 
-            {/* Copy-friendly List (conditionally displayed) */}
+            {/* Copy-friendly List */}
             {showCopyTable && (
                 <div ref={copyTableRef} className="mt-8 p-4 border border-gray-300 rounded bg-white text-gray-800 shadow-md">
                     <h3 className="text-lg font-semibold mb-2">{t('copyPlanTitle')}</h3>
                     <p className="text-sm text-gray-600 mb-3">{t('copyPlanInstructions')}</p>
-                    {/* Use a <pre> tag for easy copying of formatted text */}
                     <pre className="text-sm whitespace-pre-wrap break-words">
                         {weeklyPlan.map(item => (
-                            // Render each item on a new line
                             <div key={item.id + '-copy'}>
                                 {item.day}: {item.meal}
                             </div>
@@ -633,6 +732,6 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
                     </pre>
                 </div>
             )}
-	    </div> // End of main wrapper
+	    </div>
     );
 }
