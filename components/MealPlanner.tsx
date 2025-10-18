@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import * as XLSX from 'xlsx';
 import {
     DndContext,
     closestCenter,
@@ -31,8 +32,7 @@ interface WeeklyPlanItem {
 }
 
 interface MealPlannerProps {
-    allCategories: string[];
-    mealsData: { [key: string]: string[] };
+    middagsUrl: string;
 }
 
 interface SavedPlanState {
@@ -349,8 +349,12 @@ const selectWeightedRandomMeal = (possibleMeals: string[], usedMeals: Set<string
 
 
 // --- Main Component ---
-export default function MealPlanner({ allCategories, mealsData }: MealPlannerProps) {
-    const [selectedCategories, setSelectedCategories] = useState<string[]>(allCategories);
+export default function MealPlanner({ middagsUrl }: MealPlannerProps) {
+    const [allCategories, setAllCategories] = useState<string[]>([]);
+    const [mealsData, setMealsData] = useState<{ [key: string]: string[] }>({});
+    const [isLoadingData, setIsLoadingData] = useState(true);
+    const [dataLoadError, setDataLoadError] = useState<string | null>(null);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlanItem[]>([]);
     const [lockedItemIds, setLockedItemIds] = useState<Set<string>>(new Set());
     const [showCopyTable, setShowCopyTable] = useState(false);
@@ -371,6 +375,60 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
         }
         return text;
     }, [language]);
+
+    // Fetch and parse XLSX data on component mount
+    useEffect(() => {
+        const fetchMealData = async () => {
+            if (!middagsUrl) {
+                setDataLoadError('MIDDAGSURL not configured');
+                setIsLoadingData(false);
+                return;
+            }
+
+            try {
+                setIsLoadingData(true);
+                const response = await fetch(middagsUrl, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData: string[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                if (!jsonData || jsonData.length < 2) {
+                    setDataLoadError('Excel file is empty or invalid');
+                    setIsLoadingData(false);
+                    return;
+                }
+
+                const categories = jsonData[0].filter(Boolean);
+                const mealsByCategory: { [key: string]: string[] } = {};
+                categories.forEach(cat => mealsByCategory[cat] = []);
+
+                // Process rows (starting from second row)
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    for (let j = 0; j < categories.length; j++) {
+                        if (row[j]) {
+                            mealsByCategory[categories[j]].push(row[j]);
+                        }
+                    }
+                }
+
+                setAllCategories(categories);
+                setMealsData(mealsByCategory);
+                setSelectedCategories(categories);
+                setIsLoadingData(false);
+            } catch (error) {
+                console.error("Failed to fetch or parse Excel data:", error);
+                setDataLoadError('Failed to load meal data');
+                setIsLoadingData(false);
+            }
+        };
+
+        fetchMealData();
+    }, [middagsUrl]);
 
     // Dnd Sensors
     const sensors = useSensors(
@@ -614,6 +672,30 @@ export default function MealPlanner({ allCategories, mealsData }: MealPlannerPro
      };
 
     // --- JSX Rendering ---
+    // Show loading state
+    if (isLoadingData) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Laster middagsdata...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state
+    if (dataLoadError) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center p-8 bg-red-50 rounded-lg border border-red-200">
+                    <p className="text-red-600 font-semibold mb-2">Kunne ikke laste middagsdata</p>
+                    <p className="text-gray-600 text-sm">{dataLoadError}</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="relative p-4 md:p-6 bg-gray-50 min-h-screen">
             {/* Language Selector */}
