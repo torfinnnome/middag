@@ -41,6 +41,7 @@
   },
   "scripts": {
     "build": "next build",
+    "cf-build": "opennextjs-cloudflare build && cp .open-next/worker.js .open-next/assets/_worker.js",
     "check": "opennextjs-cloudflare build && tsc && wrangler deploy --dry-run",
     "deploy": "opennextjs-cloudflare build && wrangler deploy",
     "dev": "next dev",

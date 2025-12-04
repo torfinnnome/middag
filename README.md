@@ -82,22 +82,49 @@ Want to run this masterpiece (or disasterpiece, depending on the day) yourself?
 
 ## Deployment ☁️
 
-This project is set up for deployment to Cloudflare Pages via the OpenNext adapter and Wrangler.
+This project is deployed to **Cloudflare Pages** (v3) using the `@opennextjs/cloudflare` adapter for server-side rendering and edge deployment.
 
-*   Configuration is in `wrangler.json`.
-*   Make sure your `MIDDAGSURL` is set as an environment variable in your Cloudflare Pages project settings.
-*   Run `npm run deploy` to build and deploy. (Requires Wrangler to be configured).
-*   Run `npm run preview` to build and test locally using Wrangler & Miniflare.
+### Initial Setup
+
+1.  **Connect your GitHub repository** to Cloudflare Pages via the [Cloudflare Dashboard](https://dash.cloudflare.com/).
+
+2.  **Configure Build Settings:**
+    *   **Framework preset:** None (or Next.js)
+    *   **Build command:** `npm run cf-build`
+    *   **Build output directory:** `.open-next/assets`
+    *   **Node.js version:** The build uses Node.js 22.16.0 by default (Pages v3)
+
+3.  **Set Environment Variables** in Cloudflare Pages project settings:
+    *   `MIDDAGSURL`: The publicly accessible URL to your Excel file (`.xlsx`)
+
+4.  **Deployment Configuration:**
+    *   Configuration is in `wrangler.toml`
+    *   The `cf-build` script builds with OpenNext and copies the worker file to enable SSR
+    *   Automatic deployments trigger on `git push` to the main branch
+    *   Preview deployments are created for pull requests
+
+### Local Development & Testing
+
+*   `npm run dev`: Local Next.js development server
+*   `npm run preview`: Build and test locally using Wrangler dev server
+*   `npm run deploy`: Build and deploy directly via Wrangler CLI (requires authentication)
+
+### Requirements
+
+*   **Node.js:** Version 18.18.0+ (20.x or 22.x recommended)
+*   **Next.js:** 15.3.6+ (includes security patches for CVE-2025-55182)
+*   **React:** 19.2.1+ (patched for critical RCE vulnerability)
 
 ## Available Scripts 📜
 
-*   `dev`: Starts the local development server.
-*   `build`: Builds the application using OpenNext for Cloudflare.
-*   `deploy`: Builds and deploys to Cloudflare Pages via Wrangler.
-*   `lint`: Runs ESLint to check for code style issues.
-*   `preview`: Runs a local preview build using Wrangler.
-*   `types`: Generates Cloudflare environment types (`env.d.ts`).
-*   `check`: Does a full build, type check, and dry-run deploy.
+*   `dev`: Starts the local Next.js development server
+*   `build`: Builds the Next.js application (used internally by OpenNext)
+*   `cf-build`: Builds for Cloudflare Pages (OpenNext + worker setup)
+*   `deploy`: Builds and deploys directly via Wrangler CLI
+*   `lint`: Runs ESLint to check for code style issues
+*   `preview`: Builds and runs a local preview using Wrangler dev server
+*   `types`: Generates Cloudflare environment types (`env.d.ts`)
+*   `check`: Full build, TypeScript check, and dry-run deploy
 
 ## Future Enhancements (Maybe?) 🤔
 
