@@ -1,0 +1,6 @@
+name = "middag-proxy"
+main = "cors-proxy-worker.js"
+compatibility_date = "2025-04-01"
+
+# This worker acts as a CORS proxy for fetching Excel files
+# Environment variable DEFAULT_RECIPE_URL is set as a secret

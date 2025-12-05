@@ -1,143 +1,130 @@
-# Middag: Yet Another Dinner Planner™️
+# Middag - Deployment Guide
 
-Tired of the eternal question, "Hva skal vi ha til middag?" (What's for dinner?) Staring blankly into the fridge abyss? Arguing with your significant other/cat/inner monologue about whether it's a fish or fajita kind of day?
+Middag is a weekly dinner planner that helps you organize meals for the week. The application fetches meal ideas from an Excel file and generates a weekly meal plan based on your preferences.
 
-Fear not, for **Middag** is here! It's a surprisingly functional (most of the time) Next.js application designed to take the *thinking* (and maybe some of the arguing) out of your weekly dinner planning.
+Key features:
+- Fetch meal data from an Excel file with category organization
+- Filter meals by categories (fish, vegetarian, red meat, etc.)
+- Generate weekly meal plans using random or weighted algorithms
+- Lock specific days to preserve certain meals
+- Drag-and-drop reordering of meals
+- Manual editing (double-click any meal to change it)
+- Copy the plan to clipboard for sharing
+- Multi-language support (Norwegian, English, Spanish)
 
-![Middag Screenshot](sh0t.png)
-*(Yes, it actually looks like this!)*
+This guide describes how to deploy the application.
 
-## What Does It Actually Do?
+## Overview
 
-This isn't just *any* dinner planner. This is a sophisticated piece of engineering that:
+The application consists of two components:
+- `index.html` - A standalone web application (no build process required)
+- `cors-proxy-worker.js` - A Cloudflare Worker that fetches your Excel file and adds CORS headers
 
-1.  Fetches meal ideas from a **mysterious Excel sheet** living somewhere on the internet (seriously, check the `.env` requirement).
-2.  Lets you filter by meal categories because maybe you're *not* feeling "Rødt kjøtt" (Red meat) today.
-3.  Generates a weekly meal plan using algorithms ranging from "pure chaos" (random) to "slightly less chaos" (weighted towards the top of your Excel list).
-4.  Allows you to **lock in** those non-negotiable Taco Fridays 🌮.
-5.  Features **drag-and-drop** reordering for when the generated plan feels *slightly* insulting.
-6.  Supports **manual editing** double-click a meal to change it, because you're the boss, not the spreadsheet!
-7.  Includes a handy **copy-to-clipboard** feature for easy sharing (or printing and sticking to the fridge with questionable magnets).
-8.  Speaks multiple languages! (Currently NO 🇳🇴, EN 🇬🇧, ES 🇪🇸) - ¡Olé!
+The Worker serves two purposes:
+1. Allows the application to fetch Excel files from any URL without CORS restrictions
+2. Keeps your recipe file URL private (stored as a secret in Cloudflare)
 
-Built with modern web tech and deployed serverlessly on the edge via Cloudflare Pages, because why not?
+## Prerequisites
 
-## Key Features Rundown ✨
+- A Cloudflare account (free tier is sufficient)
+- An Excel file (.xlsx) with your recipes, hosted somewhere publicly accessible
+- Git and npm installed locally
 
-*   🍽️ Fetches meal data from an online Excel file (`.xlsx`).
-*   ✅ Select/deselect meal categories.
-*   🎲 Random or Weighted meal plan generation.
-*   🔒 Lock/Unlock specific days.
-*   👆 Drag-and-drop reordering of the meal plan.
-*   ✏️ Manually edit meals directly in the plan.
-*   📋 Copy plan to clipboard.
-*   🌍 Multi-language support (NO, EN, ES).
-*   🚀 Deployed on Cloudflare Pages using OpenNext.
+## Deployment Steps
 
-## Tech Stack 🛠️
+### Step 1: Deploy the CORS Proxy Worker
 
-*   **Framework:** Next.js 15 (React 19)
-*   **Language:** TypeScript
-*   **Styling:** Tailwind CSS 4 & PostCSS
-*   **Drag & Drop:** @dnd-kit
-*   **Excel Parsing:** SheetJS (xlsx)
-*   **Deployment:** Cloudflare Pages + OpenNext + Wrangler
-*   **Linting:** ESLint
-*   **IDs:** UUID
+1. Login to Cloudflare:
+   ```bash
+   npx wrangler login
+   ```
 
-## Getting Started Locally 🚀
+2. Deploy the worker:
+   ```bash
+   npx wrangler deploy cors-proxy-worker.js --config wrangler-proxy.toml
+   ```
 
-Want to run this masterpiece (or disasterpiece, depending on the day) yourself?
+3. Note the Worker URL (it will show something like):
+   ```
+   https://middag-proxy.YOUR_SUBDOMAIN.workers.dev
+   ```
 
-1.  **Clone the repo:**
-    ```bash
-    git clone https://github.com/torfinnnome/middag.git
-    cd middag
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    # or yarn install or pnpm install
-    ```
-3.  **Configure the magic spreadsheet URL:**
-    *   Create a `.env.local` file in the root directory.
-    *   Add the following line, replacing the URL with the *actual, publicly accessible* URL to your `.xlsx` file:
-        ```dotenv
-        MIDDAGSURL="https://your-spreadsheet-url-here.xlsx"
-        ```
-    *   **Spreadsheet Format:** The Excel file should have categories in the first row (A1, B1, C1, ...) and the corresponding meals listed below each category header. Like this:
+4. Set your secret recipe URL:
+   ```bash
+   npx wrangler secret put DEFAULT_RECIPE_URL --config wrangler-proxy.toml
+   ```
 
-        | Fisk      | Vegetar       | Annet           |
-        | :-------- | :------------ | :-------------- |
-        | Laks      | Linsegryte    | Taco            |
-        | Torsk     | Kikertcurry   | Hjemmelaget Pizza |
-        | Sei       | Bønneburger   | Fajitas         |
-        | ...       | ...           | ...             |
+   When prompted, paste your Excel file URL (e.g., `https://example.com/your-recipes.xlsx`)
 
-4.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-5.  Open [http://localhost:3000](http://localhost:3000) and behold the dinner-planning glory!
+### Step 2: Update index.html
 
-## Deployment ☁️
+1. Open `index.html` and find line ~529:
+   ```javascript
+   const proxyUrl = 'https://middag-proxy.YOUR_SUBDOMAIN.workers.dev/';
+   ```
 
-This project is deployed to **Cloudflare Pages** (v3) using the `@opennextjs/cloudflare` adapter for server-side rendering and edge deployment.
+2. Replace `YOUR_SUBDOMAIN` with your actual Cloudflare worker subdomain
 
-### Initial Setup
+### Step 3: Deploy the HTML
 
-1.  **Connect your GitHub repository** to Cloudflare Pages via the [Cloudflare Dashboard](https://dash.cloudflare.com/).
+Choose one of these methods:
 
-2.  **Configure Build Settings:**
-    *   **Framework preset:** None (or Next.js)
-    *   **Build command:** `npm run cf-build`
-    *   **Build output directory:** `.open-next/assets`
-    *   **Node.js version:** The build uses Node.js 22.16.0 by default (Pages v3)
+#### Option A: GitHub Pages
+```bash
+git add index.html cors-proxy-worker.js wrangler-proxy.toml
+git commit -m "Add simple single-file version with CORS proxy"
+git push
+```
 
-3.  **Set Environment Variables** in Cloudflare Pages project settings:
-    *   `MIDDAGSURL`: The publicly accessible URL to your Excel file (`.xlsx`)
+Then in GitHub:
+- Go to Settings → Pages
+- Source: Deploy from branch → main
+- Your site will be at: `https://YOUR_USERNAME.github.io/middag/`
 
-4.  **Deployment Configuration:**
-    *   Configuration is in `wrangler.toml`
-    *   The `cf-build` script builds with OpenNext and copies the worker file to enable SSR
-    *   Automatic deployments trigger on `git push` to the main branch
-    *   Preview deployments are created for pull requests
+#### Option B: Cloudflare Pages
+- Go to Cloudflare Dashboard → Pages
+- Create new project
+- Connect your GitHub repo or upload `index.html` directly
+- Deploy the project
 
-### Local Development & Testing
+#### Option C: Any Static Host
+Upload `index.html` to any web server.
 
-*   `npm run dev`: Local Next.js development server
-*   `npm run preview`: Build and test locally using Wrangler dev server
-*   `npm run deploy`: Build and deploy directly via Wrangler CLI (requires authentication)
+### Step 4: Testing
 
-### Requirements
+1. Open your deployed site
+2. Click "Load Meals" without entering a URL
+3. The application should load your default (hidden) recipes
+4. Users can still provide their own Excel URL if they want
 
-*   **Node.js:** Version 18.18.0+ (20.x or 22.x recommended)
-*   **Next.js:** 15.3.6+ (includes security patches for CVE-2025-55182)
-*   **React:** 19.2.1+ (patched for critical RCE vulnerability)
+## How It Works
 
-## Available Scripts 📜
+```
+User clicks "Load Meals"
+         ↓
+    (no URL entered)
+         ↓
+HTML calls → Worker (with no URL param)
+         ↓
+Worker uses → SECRET DEFAULT_RECIPE_URL
+         ↓
+Worker fetches Excel → Adds CORS headers
+         ↓
+Returns to HTML → Displays meals
+```
 
-*   `dev`: Starts the local Next.js development server
-*   `build`: Builds the Next.js application (used internally by OpenNext)
-*   `cf-build`: Builds for Cloudflare Pages (OpenNext + worker setup)
-*   `deploy`: Builds and deploys directly via Wrangler CLI
-*   `lint`: Runs ESLint to check for code style issues
-*   `preview`: Builds and runs a local preview using Wrangler dev server
-*   `types`: Generates Cloudflare environment types (`env.d.ts`)
-*   `check`: Full build, TypeScript check, and dry-run deploy
+Your recipe URL is never exposed in the HTML source code.
 
-## Future Enhancements (Maybe?) 🤔
+## Updating Your Recipe URL Later
 
-*   Storing meal data in a *real* database instead of a rogue spreadsheet.
-*   User accounts? Probably too much effort.
-*   Preventing the same meal twice in one week (unless it's pizza, obviously).
-*   AI suggestions based on leftover yogurt and that one questionable vegetable in the back of the fridge (highly unlikely).
-*   More languages? Submit a PR!
+```bash
+npx wrangler secret put DEFAULT_RECIPE_URL --config wrangler-proxy.toml
+```
 
-## License
+Paste the new URL when prompted.
 
-MIT License
+## Costs
 
----
-
-Vel bekomme! (Enjoy your meal!)
+- Worker: Free tier includes 100,000 requests per day
+- Bandwidth: Free on Cloudflare's free tier
+- Total: No cost for typical usage

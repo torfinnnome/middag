@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Middag - Dinner Planner</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-text {
+            text-align: left;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+        }
+
+        .control-group {
+            margin-bottom: 0;
+        }
+
+        .compact-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+
+        .control-group label {
+            display: none;
+        }
+
+        .category-item label {
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-prominent {
+            padding: 0.6rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-prominent:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .categories {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+        }
+
+        .categories h2 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .category-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .category-item:hover {
+            border-color: var(--primary);
+            background: var(--bg);
+        }
+
+        .category-item input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        .week-plan {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .week-plan h2 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .day-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            cursor: move;
+            transition: all 0.2s;
+        }
+
+        .day-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .day-card.dragging {
+            opacity: 0.5;
+        }
+
+        .day-card.drag-over {
+            border-color: var(--primary);
+            border-style: dashed;
+            background: #eff6ff;
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+        }
+
+        .day-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-light);
+            background: var(--bg);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .day-meal {
+            font-size: 0.95rem;
+            color: var(--text);
+            padding: 0.25rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .day-meal:hover {
+            background: white;
+        }
+
+        .lock-btn {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.2s;
+            opacity: 0.6;
+        }
+
+        .lock-btn:hover {
+            transform: scale(1.15);
+            opacity: 1;
+        }
+
+        .locked .day-card {
+            border-color: var(--warning);
+            background: #fffbeb;
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .lang-btn {
+            background: none;
+            border: 1px solid var(--border);
+            padding: 0.35rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid var(--danger);
+            padding: 1rem;
+            border-radius: 8px;
+            color: var(--danger);
+            margin-bottom: 1rem;
+        }
+
+        .generation-mode {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .mode-option {
+            flex: 1;
+            padding: 0.4rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            min-width: 0;
+        }
+
+
+        .mode-option:hover {
+            border-color: var(--primary);
+        }
+
+        .mode-option.active {
+            border-color: var(--primary);
+            background: #eff6ff;
+        }
+
+        .controls h3 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0.75rem;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .category-grid {
+                gap: 0.4rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .compact-row {
+                flex-direction: column;
+            }
+
+            .compact-row input {
+                width: 100%;
+            }
+
+            .generation-mode {
+                width: 100%;
+            }
+
+            .btn-prominent {
+                width: 100%;
+                padding: 0.75rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-text">
+                <h1>Middag</h1>
+                <p class="subtitle" data-i18n="subtitle">Your weekly dinner planner</p>
+            </div>
+            <div class="language-selector">
+                <button class="lang-btn active" data-lang="en">EN 🇬🇧</button>
+                <button class="lang-btn" data-lang="no">NO 🇳🇴</button>
+                <button class="lang-btn" data-lang="es">ES 🇪🇸</button>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="compact-row" id="urlRow" style="margin-bottom: 0.75rem; display: none;">
+                <input type="text" id="excelUrl" placeholder="Custom Excel URL (optional)">
+                <button class="btn btn-primary" id="loadBtn" data-i18n="loadBtn">Load</button>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                    <span style="font-size: 0.85rem; color: var(--text-light); white-space: nowrap;" data-i18n="rankingLabel">Ranking:</span>
+                    <div class="generation-mode" style="margin: 0;">
+                        <div class="mode-option active" data-mode="random" id="randomOption">
+                            <div data-i18n="randomMode">Random</div>
+                        </div>
+                        <div class="mode-option" data-mode="weighted" id="weightedOption">
+                            <div data-i18n="weightedMode">Weighted</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-prominent" id="generateBtn" data-i18n="generateBtn">Generate</button>
+                <button class="btn btn-warning btn-prominent" id="copyBtn" data-i18n="copyBtn" style="display: none;">Copy</button>
+            </div>
+            <div style="text-align: center; margin-top: 0.5rem;">
+                <button id="toggleUrlBtn" style="background: none; border: none; color: var(--text-light); font-size: 0.8rem; cursor: pointer; text-decoration: underline;">
+                    <span data-i18n="useCustomUrl">Use custom URL</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="categoriesSection" style="display: none;">
+            <div class="categories">
+                <h2 data-i18n="categoriesTitle">Meal Categories</h2>
+                <div class="category-grid" id="categoryGrid"></div>
+            </div>
+        </div>
+
+        <div id="weekPlan" class="week-plan" style="display: none;">
+            <h2 data-i18n="weekPlanTitle">This Week's Meals</h2>
+            <div id="planContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // Translations
+        const translations = {
+            en: {
+                subtitle: "Your weekly dinner planner",
+                excelUrlLabel: "Excel File URL:",
+                loadBtn: "Load",
+                categoriesTitle: "Categories",
+                rankingLabel: "Ranking:",
+                randomMode: "Random",
+                randomTooltip: "Picks meals completely at random from all selected categories",
+                weightedMode: "Weighted",
+                weightedTooltip: "Prefers meals from the top of your list, but still adds variety",
+                useCustomUrl: "Use custom URL",
+                generateBtn: "Generate",
+                copyBtn: "Copy",
+                weekPlanTitle: "This Week",
+                days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                editHint: "Double-click to edit",
+                copied: "Copied",
+                error: "Error loading file. Make sure the URL is correct and accessible."
+            },
+            no: {
+                subtitle: "Din ukentlige middagsplanlegger",
+                excelUrlLabel: "Excel-fil URL:",
+                loadBtn: "Last inn",
+                categoriesTitle: "Kategorier",
+                rankingLabel: "Rangering:",
+                randomMode: "Tilfeldig",
+                randomTooltip: "Velger måltider helt tilfeldig fra alle valgte kategorier",
+                weightedMode: "Vektet",
+                weightedTooltip: "Foretrekker måltider fra toppen av listen, men gir fortsatt variasjon",
+                useCustomUrl: "Bruk egendefinert URL",
+                generateBtn: "Generer",
+                copyBtn: "Kopier",
+                weekPlanTitle: "Denne uken",
+                days: ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"],
+                editHint: "Dobbeltklikk for å redigere",
+                copied: "Kopiert",
+                error: "Feil ved lasting av fil. Kontroller at URL-en er riktig og tilgjengelig."
+            },
+            es: {
+                subtitle: "Tu planificador semanal de cenas",
+                excelUrlLabel: "URL del archivo Excel:",
+                loadBtn: "Cargar",
+                categoriesTitle: "Categorías",
+                rankingLabel: "Clasificación:",
+                randomMode: "Aleatorio",
+                randomTooltip: "Elige comidas completamente al azar de todas las categorías seleccionadas",
+                weightedMode: "Ponderado",
+                weightedTooltip: "Prefiere comidas de la parte superior de tu lista, pero aún agrega variedad",
+                useCustomUrl: "Usar URL personalizada",
+                generateBtn: "Generar",
+                copyBtn: "Copiar",
+                weekPlanTitle: "Esta semana",
+                days: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
+                editHint: "Doble clic para editar",
+                copied: "Copiado",
+                error: "Error al cargar el archivo. Asegúrate de que la URL sea correcta y accesible."
+            }
+        };
+
+        // State
+        let currentLang = 'en';
+        let mealData = {};
+        let currentPlan = [];
+        let lockedDays = new Set();
+        let generationMode = 'random';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupLanguageSelector();
+            setupModeSelector();
+            setupEventListeners();
+
+            // Set initial tooltips
+            updateTranslations();
+
+            // Load URL from localStorage if exists
+            const savedUrl = localStorage.getItem('excelUrl');
+            if (savedUrl) {
+                document.getElementById('excelUrl').value = savedUrl;
+            }
+
+            // Auto-load default meals on page load
+            loadExcelFile();
+        });
+
+        function setupLanguageSelector() {
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentLang = btn.dataset.lang;
+                    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    updateTranslations();
+                });
+            });
+        }
+
+        function setupModeSelector() {
+            document.querySelectorAll('.mode-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    generationMode = option.dataset.mode;
+                    document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
+                    option.classList.add('active');
+                });
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('loadBtn').addEventListener('click', loadExcelFile);
+            document.getElementById('generateBtn').addEventListener('click', generatePlan);
+            document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
+            document.getElementById('toggleUrlBtn').addEventListener('click', toggleUrlInput);
+        }
+
+        function toggleUrlInput() {
+            const urlRow = document.getElementById('urlRow');
+            const toggleBtn = document.getElementById('toggleUrlBtn');
+            if (urlRow.style.display === 'none') {
+                urlRow.style.display = 'flex';
+                toggleBtn.style.display = 'none';
+            }
+        }
+
+        function updateTranslations() {
+            const t = translations[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) {
+                    el.textContent = t[key];
+                }
+            });
+
+            // Update tooltips
+            document.getElementById('randomOption').title = t.randomTooltip;
+            document.getElementById('weightedOption').title = t.weightedTooltip;
+
+            // Update day names in existing plan
+            if (currentPlan.length > 0) {
+                const days = translations[currentLang].days;
+                currentPlan.forEach((item, index) => {
+                    item.day = days[index];
+                });
+                renderPlan();
+            }
+        }
+
+        async function loadExcelFile() {
+            const url = document.getElementById('excelUrl').value.trim();
+
+            // IMPORTANT: Replace this with your actual worker URL after deployment
+            const proxyUrl = 'https://middag-proxy.YOUR_SUBDOMAIN.workers.dev/';
+
+            // If no URL provided, use proxy default (hidden recipe URL)
+            // If URL provided, use proxy to fetch it
+            const fetchUrl = url ? `${proxyUrl}?url=${encodeURIComponent(url)}` : proxyUrl;
+
+            // Save URL to localStorage if provided
+            if (url) {
+                localStorage.setItem('excelUrl', url);
+            }
+
+            try {
+                hideError();
+                const response = await fetch(fetchUrl);
+                const arrayBuffer = await response.arrayBuffer();
+                const workbook = XLSX.read(arrayBuffer);
+
+                // Parse first sheet
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                // First row is categories
+                const categories = data[0].filter(c => c);
+                mealData = {};
+
+                categories.forEach((category, index) => {
+                    mealData[category] = [];
+                    for (let i = 1; i < data.length; i++) {
+                        if (data[i][index]) {
+                            mealData[category].push(data[i][index]);
+                        }
+                    }
+                });
+
+                renderCategories();
+                document.getElementById('categoriesSection').style.display = 'block';
+
+                // Auto-generate plan after loading
+                generatePlan();
+            } catch (error) {
+                showError(translations[currentLang].error);
+                console.error(error);
+            }
+        }
+
+        function renderCategories() {
+            const grid = document.getElementById('categoryGrid');
+            grid.innerHTML = '';
+
+            Object.keys(mealData).forEach(category => {
+                const item = document.createElement('div');
+                item.className = 'category-item';
+                item.innerHTML = `
+                    <input type="checkbox" id="cat-${category}" checked>
+                    <label for="cat-${category}">${category}</label>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        function generatePlan() {
+            const selectedCategories = Array.from(document.querySelectorAll('.category-item input:checked'))
+                .map(cb => cb.id.replace('cat-', ''));
+
+            if (selectedCategories.length === 0) {
+                alert('Please select at least one category!');
+                return;
+            }
+
+            const allMeals = [];
+            selectedCategories.forEach(category => {
+                mealData[category].forEach((meal, index) => {
+                    allMeals.push({
+                        name: meal,
+                        category: category,
+                        weight: generationMode === 'weighted' ? (mealData[category].length - index) : 1
+                    });
+                });
+            });
+
+            const days = translations[currentLang].days;
+
+            currentPlan = days.map((day, index) => {
+                if (lockedDays.has(index) && currentPlan[index]) {
+                    return currentPlan[index];
+                }
+
+                let meal;
+                if (generationMode === 'random') {
+                    meal = allMeals[Math.floor(Math.random() * allMeals.length)];
+                } else {
+                    // Weighted selection
+                    const totalWeight = allMeals.reduce((sum, m) => sum + m.weight, 0);
+                    let random = Math.random() * totalWeight;
+                    meal = allMeals.find(m => {
+                        random -= m.weight;
+                        return random <= 0;
+                    }) || allMeals[0];
+                }
+
+                return {
+                    day: day,
+                    meal: meal.name,
+                    category: meal.category,
+                    locked: lockedDays.has(index)
+                };
+            });
+
+            renderPlan();
+            document.getElementById('weekPlan').style.display = 'block';
+            document.getElementById('copyBtn').style.display = 'inline-flex';
+        }
+
+        function renderPlan() {
+            const container = document.getElementById('planContainer');
+            container.innerHTML = '';
+
+            currentPlan.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'day-card' + (item.locked ? ' locked' : '');
+                card.draggable = !item.locked;
+                card.dataset.index = index;
+
+                card.innerHTML = `
+                    <div class="day-header">
+                        <span class="day-name">
+                            ${item.day}
+                            <span class="category-badge">${item.category}</span>
+                        </span>
+                        <button class="lock-btn" onclick="toggleLock(${index})">
+                            ${item.locked ? '🔒' : '🔓'}
+                        </button>
+                    </div>
+                    <div class="day-meal" ondblclick="editMeal(${index})">${item.meal}</div>
+                `;
+
+                if (!item.locked) {
+                    card.addEventListener('dragstart', handleDragStart);
+                    card.addEventListener('dragover', handleDragOver);
+                    card.addEventListener('drop', handleDrop);
+                    card.addEventListener('dragend', handleDragEnd);
+                }
+
+                container.appendChild(card);
+            });
+        }
+
+        function toggleLock(index) {
+            if (lockedDays.has(index)) {
+                lockedDays.delete(index);
+                currentPlan[index].locked = false;
+            } else {
+                lockedDays.add(index);
+                currentPlan[index].locked = true;
+            }
+            renderPlan();
+        }
+
+        function editMeal(index) {
+            const newMeal = prompt(translations[currentLang].editHint, currentPlan[index].meal);
+            if (newMeal !== null && newMeal.trim() !== '') {
+                currentPlan[index].meal = newMeal.trim();
+                renderPlan();
+            }
+        }
+
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+            return false;
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+
+            if (draggedElement !== this) {
+                const fromIndex = parseInt(draggedElement.dataset.index);
+                const toIndex = parseInt(this.dataset.index);
+
+                if (!currentPlan[toIndex].locked) {
+                    const temp = currentPlan[fromIndex];
+                    currentPlan[fromIndex] = currentPlan[toIndex];
+                    currentPlan[toIndex] = temp;
+                    renderPlan();
+                }
+            }
+
+            this.classList.remove('drag-over');
+            return false;
+        }
+
+        function handleDragEnd() {
+            document.querySelectorAll('.day-card').forEach(card => {
+                card.classList.remove('dragging', 'drag-over');
+            });
+        }
+
+        function copyToClipboard() {
+            const text = currentPlan.map(item => `${item.day}: ${item.meal}`).join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBtn');
+                const originalText = btn.textContent;
+                btn.textContent = '✓ ' + translations[currentLang].copied;
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 1500);
+            });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
