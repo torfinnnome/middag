@@ -232,7 +232,24 @@
             padding: 0.75rem;
             margin-bottom: 0.5rem;
             cursor: move;
+            cursor: grab;
             transition: all 0.2s;
+            touch-action: none;
+        }
+
+        .day-card:active {
+            cursor: grabbing;
+        }
+
+        /* Mobile-specific styles */
+        @media (hover: none) and (pointer: coarse) {
+            .day-card {
+                cursor: pointer;
+            }
+
+            .day-card:active {
+                transform: scale(0.98);
+            }
         }
 
         .day-card:hover {
@@ -774,6 +791,11 @@
                     card.addEventListener('dragover', handleDragOver);
                     card.addEventListener('drop', handleDrop);
                     card.addEventListener('dragend', handleDragEnd);
+                    
+                    // Add touch event listeners for mobile support
+                    card.addEventListener('touchstart', handleTouchStart, { passive: false });
+                    card.addEventListener('touchmove', handleTouchMove, { passive: false });
+                    card.addEventListener('touchend', handleTouchEnd, { passive: false });
                 }
 
                 container.appendChild(card);
@@ -800,6 +822,9 @@
         }
 
         let draggedElement = null;
+        let touchStartY = 0;
+        let touchCurrentY = 0;
+        let isDragging = false;
 
         function handleDragStart(e) {
             draggedElement = this;
@@ -841,6 +866,109 @@
             document.querySelectorAll('.day-card').forEach(card => {
                 card.classList.remove('dragging', 'drag-over');
             });
+        }
+
+        // Touch event handlers for mobile support
+        function handleTouchStart(e) {
+            if (this.classList.contains('locked')) return;
+            
+            draggedElement = this;
+            this.classList.add('dragging');
+            
+            touchStartY = e.touches[0].clientY;
+            touchCurrentY = touchStartY;
+            isDragging = false;
+            
+            // Store initial position
+            const rect = this.getBoundingClientRect();
+            this.dataset.initialY = rect.top;
+            
+            e.preventDefault();
+        }
+
+        function handleTouchMove(e) {
+            if (!draggedElement || draggedElement.classList.contains('locked')) return;
+            
+            touchCurrentY = e.touches[0].clientY;
+            const touchDiff = touchCurrentY - touchStartY;
+            
+            // Only start dragging after some movement to avoid conflict with scrolling
+            if (Math.abs(touchDiff) > 10) {
+                isDragging = true;
+                
+                // Move the element with the touch
+                const initialY = parseFloat(draggedElement.dataset.initialY);
+                draggedElement.style.position = 'relative';
+                draggedElement.style.top = (touchCurrentY - initialY) + 'px';
+                draggedElement.style.zIndex = '1000';
+                draggedElement.style.transition = 'none';
+                
+                // Find the element below the current touch position
+                const cards = document.querySelectorAll('.day-card:not(.locked)');
+                const draggedIndex = parseInt(draggedElement.dataset.index);
+                
+                cards.forEach(card => {
+                    if (card !== draggedElement) {
+                        const cardRect = card.getBoundingClientRect();
+                        const cardCenter = cardRect.top + cardRect.height / 2;
+                        
+                        if (touchCurrentY > cardRect.top && touchCurrentY < cardCenter) {
+                            // Touch is in the upper half of this card
+                            card.classList.add('drag-over');
+                        } else {
+                            card.classList.remove('drag-over');
+                        }
+                    }
+                });
+                
+                e.preventDefault();
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!draggedElement || !isDragging) {
+                // Reset if not actually dragging
+                if (draggedElement) {
+                    draggedElement.classList.remove('dragging');
+                    draggedElement.style.position = '';
+                    draggedElement.style.top = '';
+                    draggedElement.style.zIndex = '';
+                    draggedElement.style.transition = '';
+                }
+                draggedElement = null;
+                isDragging = false;
+                return;
+            }
+            
+            // Find the card that was being hovered over
+            const dragOverCard = document.querySelector('.day-card.drag-over:not(.dragging)');
+            
+            if (dragOverCard) {
+                const fromIndex = parseInt(draggedElement.dataset.index);
+                const toIndex = parseInt(dragOverCard.dataset.index);
+                
+                if (!currentPlan[toIndex].locked) {
+                    const temp = currentPlan[fromIndex];
+                    currentPlan[fromIndex] = currentPlan[toIndex];
+                    currentPlan[toIndex] = temp;
+                    renderPlan();
+                }
+            } else {
+                // No card was hovered, just reset
+                renderPlan();
+            }
+            
+            // Clean up
+            document.querySelectorAll('.day-card').forEach(card => {
+                card.classList.remove('dragging', 'drag-over');
+                card.style.position = '';
+                card.style.top = '';
+                card.style.zIndex = '';
+                card.style.transition = '';
+            });
+            
+            draggedElement = null;
+            isDragging = false;
         }
 
         function copyToClipboard() {
