@@ -431,6 +431,68 @@
                 width: 100%;
             }
 
+            .controls-main-row {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .controls-main-row > div:first-child {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .generation-mode {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .mode-option {
+                flex: 1;
+                min-width: 0;
+            }
+
+            /* Improve button spacing and appearance on mobile */
+            .btn-prominent {
+                width: 100%;
+                margin: 0.25rem 0;
+            }
+
+            .controls-main-row {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .controls-main-row > .ranking-container {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .controls-main-row > button {
+                width: 100%;
+                margin: 0;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .ranking-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+
+            .ranking-label {
+                width: 100%;
+                text-align: left;
+            }
+
+            .button-group {
+                display: flex;
+                gap: 0.5rem;
+                width: 100%;
+            }
+
             .generation-mode {
                 width: 100%;
             }
@@ -461,9 +523,9 @@
                 <input type="text" id="excelUrl" placeholder="Custom Excel URL (optional)">
                 <button class="btn btn-primary" id="loadBtn" data-i18n="loadBtn">Load</button>
             </div>
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
-                    <span style="font-size: 0.85rem; color: var(--text-light); white-space: nowrap;" data-i18n="rankingLabel">Ranking:</span>
+            <div class="controls-main-row" style="display: flex; gap: 0.75rem; align-items: center;">
+                <div class="ranking-container" style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                    <span class="ranking-label" style="font-size: 0.85rem; color: var(--text-light); white-space: nowrap;" data-i18n="rankingLabel">Ranking:</span>
                     <div class="generation-mode" style="margin: 0;">
                         <div class="mode-option active" data-mode="random" id="randomOption">
                             <div data-i18n="randomMode">Random</div>
@@ -473,8 +535,10 @@
                         </div>
                     </div>
                 </div>
-                <button class="btn btn-secondary btn-prominent" id="generateBtn" data-i18n="generateBtn">Generate</button>
-                <button class="btn btn-warning btn-prominent" id="copyBtn" data-i18n="copyBtn" style="display: none;">Copy</button>
+                <div class="button-group">
+                    <button class="btn btn-secondary btn-prominent" id="generateBtn" data-i18n="generateBtn">Generate</button>
+                    <button class="btn btn-warning btn-prominent" id="copyBtn" data-i18n="copyBtn" style="display: none;">Copy</button>
+                </div>
             </div>
             <div style="text-align: center; margin-top: 0.5rem;">
                 <button id="toggleUrlBtn" style="background: none; border: none; color: var(--text-light); font-size: 0.8rem; cursor: pointer; text-decoration: underline;">
