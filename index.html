@@ -157,6 +157,9 @@
             font-size: 0.95rem;
             font-weight: 600;
             box-shadow: var(--shadow);
+            text-align: center;
+            justify-content: center;
+            align-items: center;
         }
 
         .btn-prominent:hover {
@@ -452,11 +455,6 @@
             }
 
             /* Improve button spacing and appearance on mobile */
-            .btn-prominent {
-                width: 100%;
-                margin: 0.25rem 0;
-            }
-
             .controls-main-row {
                 flex-direction: column;
                 gap: 0.75rem;
@@ -473,7 +471,10 @@
             }
 
             .button-group {
+                display: flex;
                 flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
             }
 
             .ranking-container {
@@ -487,12 +488,6 @@
                 text-align: left;
             }
 
-            .button-group {
-                display: flex;
-                gap: 0.5rem;
-                width: 100%;
-            }
-
             .generation-mode {
                 width: 100%;
             }
@@ -500,6 +495,7 @@
             .btn-prominent {
                 width: 100%;
                 padding: 0.75rem 1rem;
+                margin: 0.25rem 0;
             }
         }
     </style>
