@@ -402,6 +402,21 @@
             border-color: var(--primary);
         }
 
+        .theme-toggle-btn {
+            background: none;
+            border: 1px solid var(--border);
+            padding: 0.35rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+
+        .theme-toggle-btn:hover {
+            background: var(--surface-hover);
+        }
+
         .loading {
             text-align: center;
             padding: 2rem;
@@ -559,10 +574,13 @@
                 <h1>Middag</h1>
                 <p class="subtitle" data-i18n="subtitle">Your weekly dinner planner</p>
             </div>
-            <div class="language-selector">
-                <button class="lang-btn active" data-lang="en">EN 🇬🇧</button>
-                <button class="lang-btn" data-lang="no">NO 🇳🇴</button>
-                <button class="lang-btn" data-lang="es">ES 🇪🇸</button>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="theme-toggle-btn" id="themeToggle" title="Toggle theme">🌙</button>
+                <div class="language-selector">
+                    <button class="lang-btn active" data-lang="en">EN 🇬🇧</button>
+                    <button class="lang-btn" data-lang="no">NO 🇳🇴</button>
+                    <button class="lang-btn" data-lang="es">ES 🇪🇸</button>
+                </div>
             </div>
         </header>
 
@@ -698,6 +716,13 @@
                 document.getElementById('excelUrl').value = savedUrl;
             }
 
+            // Restore saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+            }
+            updateThemeIcon();
+
             // Auto-load default meals on page load
             loadExcelFile();
         });
@@ -728,6 +753,7 @@
             document.getElementById('generateBtn').addEventListener('click', generatePlan);
             document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
             document.getElementById('toggleUrlBtn').addEventListener('click', toggleUrlInput);
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
         }
 
         function toggleUrlInput() {
@@ -1107,6 +1133,25 @@
 
         function hideError() {
             document.getElementById('error').style.display = 'none';
+        }
+
+        function toggleTheme() {
+            const current = document.body.getAttribute('data-theme');
+            const next = current === 'light' ? '' : 'light';
+            if (next === '') {
+                document.body.removeAttribute('data-theme');
+            } else {
+                document.body.setAttribute('data-theme', next);
+            }
+            localStorage.setItem('theme', next);
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const btn = document.getElementById('themeToggle');
+            if (!btn) return;
+            const theme = document.body.getAttribute('data-theme');
+            btn.textContent = theme === 'light' ? '☀️' : '🌙';
         }
     </script>
 </body>
