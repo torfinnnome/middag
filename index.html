@@ -13,6 +13,26 @@
         }
 
         :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --text: #f1f5f9;
+            --text-light: #94a3b8;
+            --border: #334155;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            --drag-over-bg: #1e3a5f;
+            --locked-bg: rgba(245, 158, 11, 0.1);
+            --error-bg: rgba(239, 68, 68, 0.1);
+            --meal-edit-hover: #334155;
+        }
+
+        [data-theme="light"] {
             --primary: #2563eb;
             --primary-dark: #1d4ed8;
             --secondary: #10b981;
@@ -20,16 +40,21 @@
             --warning: #f59e0b;
             --bg: #f8fafc;
             --surface: #ffffff;
+            --surface-hover: #f1f5f9;
             --text: #1e293b;
             --text-light: #64748b;
             --border: #e2e8f0;
             --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --drag-over-bg: #eff6ff;
+            --locked-bg: #fffbeb;
+            --error-bg: #fee;
+            --meal-edit-hover: #f8fafc;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg);
             min-height: 100vh;
             padding: 1rem;
             color: var(--text);
@@ -294,7 +319,7 @@
         .day-card.drag-over {
             border-color: var(--primary);
             border-style: dashed;
-            background: #eff6ff;
+            background: var(--drag-over-bg);
         }
 
         .day-header {
@@ -332,7 +357,7 @@
         }
 
         .day-meal:hover {
-            background: white;
+            background: var(--meal-edit-hover);
         }
 
         .lock-btn {
@@ -352,7 +377,7 @@
 
         .locked .day-card {
             border-color: var(--warning);
-            background: #fffbeb;
+            background: var(--locked-bg);
         }
 
         .language-selector {
@@ -384,7 +409,7 @@
         }
 
         .error {
-            background: #fee;
+            background: var(--error-bg);
             border: 2px solid var(--danger);
             padding: 1rem;
             border-radius: 8px;
@@ -417,7 +442,7 @@
 
         .mode-option.active {
             border-color: var(--primary);
-            background: #eff6ff;
+            background: var(--surface-hover);
         }
 
         .controls h3 {
