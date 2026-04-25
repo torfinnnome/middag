@@ -498,36 +498,62 @@
         @media (max-width: 768px) {
             body {
                 padding: 0.75rem;
+                padding-bottom: 5rem;
             }
 
             header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
+                flex-direction: row;
+                flex-wrap: wrap;
             }
 
             h1 {
-                font-size: 1.5rem;
+                font-size: 1.25rem;
+            }
+
+            .subtitle {
+                font-size: 0.75rem;
+            }
+
+            .desktop-only {
+                display: none !important;
+            }
+
+            .mobile-only {
+                display: block !important;
+            }
+
+            .categories-header {
+                margin-bottom: 0;
+            }
+
+            .category-grid-wrapper {
+                display: none;
             }
 
             .category-grid {
                 gap: 0.4rem;
             }
 
-            .btn-group {
-                flex-direction: column;
+            .day-card {
+                padding: 0.6rem;
             }
 
-            .btn {
-                width: 100%;
+            .day-name {
+                font-size: 0.85rem;
+            }
+
+            .day-meal {
+                font-size: 0.85rem;
             }
 
             .compact-row {
-                flex-direction: column;
+                flex-direction: row;
+                flex-wrap: wrap;
             }
 
             .compact-row input {
-                width: 100%;
+                flex: 1;
+                min-width: 0;
             }
 
             .controls-main-row {
@@ -535,42 +561,13 @@
                 gap: 0.75rem;
             }
 
-            .controls-main-row > div:first-child {
-                width: 100%;
-                margin-bottom: 0.5rem;
-            }
-
             .generation-mode {
                 width: 100%;
-                justify-content: space-between;
             }
 
             .mode-option {
                 flex: 1;
                 min-width: 0;
-            }
-
-            /* Improve button spacing and appearance on mobile */
-            .controls-main-row {
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-
-            .controls-main-row > .ranking-container {
-                width: 100%;
-                margin-bottom: 0.5rem;
-            }
-
-            .controls-main-row > button {
-                width: 100%;
-                margin: 0;
-            }
-
-            .button-group {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-                width: 100%;
             }
 
             .ranking-container {
@@ -579,23 +576,8 @@
                 gap: 0.25rem;
             }
 
-            .ranking-label {
-                width: 100%;
-                text-align: left;
-            }
-
-            .generation-mode {
-                width: 100%;
-            }
-
-            .btn-prominent {
-                width: 100%;
-                padding: 0.75rem 1rem;
-                margin: 0.25rem 0;
-            }
-
-            body {
-                padding-bottom: 5rem;
+            .week-plan {
+                padding: 0.75rem;
             }
         }
 
@@ -887,6 +869,8 @@
             // Sync mobile URL input with desktop
             document.getElementById('excelUrlMobile').addEventListener('input', syncUrlInput);
             document.getElementById('excelUrl').addEventListener('input', syncUrlInputFromDesktop);
+            window.addEventListener('resize', handleResize);
+            handleResize();
         }
 
         function toggleUrlInput() {
@@ -1313,6 +1297,16 @@
 
         function syncUrlInputFromDesktop() {
             document.getElementById('excelUrlMobile').value = document.getElementById('excelUrl').value;
+        }
+
+        function handleResize() {
+            const isMobile = window.innerWidth <= 768;
+            const stickyBar = document.getElementById('stickyBar');
+            if (isMobile && currentPlan.length > 0) {
+                stickyBar.style.display = 'flex';
+            } else {
+                stickyBar.style.display = 'none';
+            }
         }
     </script>
 </body>
