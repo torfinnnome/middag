@@ -217,6 +217,35 @@
             gap: 0.5rem;
         }
 
+        .categories-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .categories-toggle {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            transition: transform 0.2s;
+        }
+
+        .categories-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .category-grid-wrapper {
+            margin-top: 0.75rem;
+        }
+
+        .mobile-only {
+            display: none;
+        }
+
+        .desktop-only {
+            display: block;
+        }
+
         .category-item {
             display: flex;
             align-items: center;
@@ -646,14 +675,19 @@
 
         <div class="main-layout">
             <div class="sidebar">
-                <div id="categoriesSection" style="display: none;">
+                <div id="categoriesSection" class="categories-section" style="display: none;">
                     <div class="categories">
-                        <h2 data-i18n="categoriesTitle">Meal Categories</h2>
-                        <div class="category-grid" id="categoryGrid"></div>
+                        <div class="categories-header" id="categoriesHeader">
+                            <h2 data-i18n="categoriesTitle">Meal Categories</h2>
+                            <span class="categories-toggle" id="categoriesToggle">▾</span>
+                        </div>
+                        <div id="categoryGridWrapper">
+                            <div class="category-grid" id="categoryGrid"></div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="controls">
+                <div class="controls desktop-only">
                     <div class="compact-row" id="urlRow" style="margin-bottom: 0.75rem; display: none; flex-direction: column;">
                         <input type="text" id="excelUrl" placeholder="Custom Excel URL (optional)" style="width: 100%; margin-bottom: 0.5rem;">
                         <button class="btn btn-primary" id="loadBtn" data-i18n="loadBtn" style="width: 100%;">Load</button>
@@ -683,9 +717,35 @@
                 </div>
             </div>
 
-            <div id="weekPlan" class="week-plan" style="display: none;">
-                <h2 data-i18n="weekPlanTitle">This Week's Meals</h2>
-                <div id="planContainer"></div>
+            <div class="plan-column">
+                <div id="weekPlan" class="week-plan" style="display: none;">
+                    <h2 data-i18n="weekPlanTitle">This Week</h2>
+                    <div id="planContainer"></div>
+                </div>
+
+                <div class="mobile-only" id="mobileBelowPlan" style="display: none;">
+                    <div class="controls" style="margin-bottom: 0.75rem;">
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div class="compact-row" style="align-items: stretch;">
+                                <input type="text" id="excelUrlMobile" placeholder="Custom Excel URL (optional)">
+                                <button class="btn btn-primary" id="loadBtnMobile" data-i18n="loadBtn">Load</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <div class="ranking-container" style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <span class="ranking-label" style="font-size: 0.85rem; color: var(--text-light);" data-i18n="rankingLabel">Ranking:</span>
+                            <div class="generation-mode">
+                                <div class="mode-option active" data-mode="random" id="randomOptionMobile">
+                                    <div data-i18n="randomMode">Random</div>
+                                </div>
+                                <div class="mode-option" data-mode="weighted" id="weightedOptionMobile">
+                                    <div data-i18n="weightedMode">Weighted</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -822,6 +882,11 @@
             document.getElementById('themeToggle').addEventListener('click', toggleTheme);
             document.getElementById('shuffleBtn').addEventListener('click', generatePlan);
             document.getElementById('stickyCopyBtn').addEventListener('click', copyToClipboard);
+            document.getElementById('categoriesHeader').addEventListener('click', toggleCategories);
+            document.getElementById('loadBtnMobile').addEventListener('click', loadExcelFileMobile);
+            // Sync mobile URL input with desktop
+            document.getElementById('excelUrlMobile').addEventListener('input', syncUrlInput);
+            document.getElementById('excelUrl').addEventListener('input', syncUrlInputFromDesktop);
         }
 
         function toggleUrlInput() {
@@ -972,6 +1037,7 @@
             document.getElementById('weekPlan').style.display = 'block';
             document.getElementById('copyBtn').style.display = 'inline-flex';
             document.getElementById('stickyBar').style.display = 'flex';
+            document.getElementById('mobileBelowPlan').style.display = 'block';
         }
 
         function renderPlan() {
@@ -1221,6 +1287,32 @@
             if (!btn) return;
             const theme = document.body.getAttribute('data-theme');
             btn.textContent = theme === 'light' ? '☀️' : '🌙';
+        }
+
+        function toggleCategories() {
+            const wrapper = document.getElementById('categoryGridWrapper');
+            const toggle = document.getElementById('categoriesToggle');
+            if (wrapper.style.display === 'none') {
+                wrapper.style.display = 'block';
+                toggle.classList.remove('collapsed');
+            } else {
+                wrapper.style.display = 'none';
+                toggle.classList.add('collapsed');
+            }
+        }
+
+        function loadExcelFileMobile() {
+            const mobileUrl = document.getElementById('excelUrlMobile').value.trim();
+            document.getElementById('excelUrl').value = mobileUrl;
+            loadExcelFile();
+        }
+
+        function syncUrlInput() {
+            document.getElementById('excelUrl').value = document.getElementById('excelUrlMobile').value;
+        }
+
+        function syncUrlInputFromDesktop() {
+            document.getElementById('excelUrlMobile').value = document.getElementById('excelUrl').value;
         }
     </script>
 </body>
