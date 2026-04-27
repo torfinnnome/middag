@@ -675,17 +675,6 @@
                         <button class="btn btn-primary" id="loadBtn" data-i18n="loadBtn" style="width: 100%;">Load</button>
                     </div>
                     <div class="controls-main-row" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <div class="ranking-container" style="display: flex; flex-direction: column; gap: 0.4rem;">
-                            <span class="ranking-label" style="font-size: 0.85rem; color: var(--text-light);" data-i18n="rankingLabel">Ranking:</span>
-                            <div class="generation-mode" style="margin: 0; width: 100%;">
-                                <div class="mode-option active" data-mode="random" id="randomOption">
-                                    <div data-i18n="randomMode">Random</div>
-                                </div>
-                                <div class="mode-option" data-mode="weighted" id="weightedOption">
-                                    <div data-i18n="weightedMode">Weighted</div>
-                                </div>
-                            </div>
-                        </div>
                         <div class="button-group" style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
                             <button class="btn btn-secondary btn-prominent" id="generateBtn" data-i18n="generateBtn" style="width: 100%;">Shuffle</button>
                             <button class="btn btn-warning btn-prominent" id="copyBtn" data-i18n="copyBtn" style="display: none; width: 100%;">Copy</button>
@@ -892,8 +881,10 @@
             });
 
             // Update tooltips
-            document.getElementById('randomOption').title = t.randomTooltip;
-            document.getElementById('weightedOption').title = t.weightedTooltip;
+            const randomEl = document.getElementById('randomOptionMobile');
+            if (randomEl) randomEl.title = t.randomTooltip;
+            const weightedEl = document.getElementById('weightedOptionMobile');
+            if (weightedEl) weightedEl.title = t.weightedTooltip;
 
             // Update day names in existing plan
             if (currentPlan.length > 0) {
